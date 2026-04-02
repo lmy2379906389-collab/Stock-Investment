@@ -1,0 +1,283 @@
+{
+  "meta": {
+    "generated_at": "2026-04-01T16:49:45",
+    "data_freshness": {
+      "realtime": "2026-04-01",
+      "monthly": "2026-03"
+    }
+  },
+  "layer0_usd_bonds": {
+    "US10Y": {
+      "value": 4.311,
+      "chg_1d_pct": -0.71,
+      "chg_5d_pct": -1.84,
+      "ma5": 4.37,
+      "ma20": 4.27,
+      "dev_from_ma5_pct": -1.35,
+      "dev_from_ma20_pct": 0.96,
+      "direction": "down",
+      "status": "ok",
+      "source": "yfinance",
+      "as_of": "2026-03-31"
+    },
+    "US2Y": {
+      "value": 3.6,
+      "chg_1d_pct": 0.002,
+      "chg_5d_pct": -0.55,
+      "ma5": 3.61,
+      "ma20": 3.6,
+      "dev_from_ma5_pct": -0.28,
+      "dev_from_ma20_pct": -0.0,
+      "direction": "down",
+      "note": "fallback: ^IRX is 13-week T-Bill rate, not true 2Y yield",
+      "status": "ok",
+      "source": "yfinance/^IRX (fallback)",
+      "as_of": "2026-03-31"
+    }
+  },
+  "layer1_external": {
+    "COPPER": {
+      "value": 5.652,
+      "chg_1d_pct": 1.15,
+      "chg_5d_pct": 2.22,
+      "ma5": 5.53,
+      "ma20": 5.62,
+      "dev_from_ma5_pct": 2.2,
+      "dev_from_ma20_pct": 0.56,
+      "direction": "up",
+      "status": "ok",
+      "source": "yfinance",
+      "as_of": "2026-04-01"
+    },
+    "BRENT": {
+      "value": 101.93,
+      "chg_1d_pct": -13.87,
+      "chg_5d_pct": -0.28,
+      "ma5": 110.73,
+      "ma20": 102.63,
+      "dev_from_ma5_pct": -7.95,
+      "dev_from_ma20_pct": -0.68,
+      "direction": "down",
+      "status": "ok",
+      "source": "yfinance",
+      "as_of": "2026-04-01"
+    },
+    "GOLD": {
+      "value": 4763.8,
+      "chg_1d_pct": 2.5,
+      "chg_5d_pct": 4.7,
+      "ma5": 4560.98,
+      "ma20": 4804.12,
+      "dev_from_ma5_pct": 4.45,
+      "dev_from_ma20_pct": -0.84,
+      "direction": "up",
+      "status": "ok",
+      "source": "yfinance",
+      "as_of": "2026-04-01"
+    },
+    "VIX": {
+      "value": 24.73,
+      "chg_1d_pct": -2.06,
+      "chg_5d_pct": -2.37,
+      "ma5": 27.82,
+      "ma20": 26.09,
+      "dev_from_ma5_pct": -11.11,
+      "dev_from_ma20_pct": -5.21,
+      "direction": "down",
+      "status": "ok",
+      "source": "yfinance",
+      "as_of": "2026-04-01"
+    },
+    "DXY": {
+      "value": 99.455,
+      "chg_1d_pct": -0.51,
+      "chg_5d_pct": -0.15,
+      "ma5": 100.0,
+      "ma20": 99.59,
+      "dev_from_ma5_pct": -0.54,
+      "dev_from_ma20_pct": -0.14,
+      "direction": "down",
+      "status": "ok",
+      "source": "yfinance",
+      "as_of": "2026-04-01"
+    },
+    "FEDWATCH": {
+      "next_meeting_date": "2026-05-05",
+      "cut_25bp_prob_pct": 0.0,
+      "hold_prob_pct": 97.7,
+      "hike_25bp_prob_pct": 2.3,
+      "pre_meeting_rate_pct": 3.639999,
+      "post_meeting_implied": 3.645737,
+      "pre_contract": "ZQJ26.CBT",
+      "meet_contract": "ZQK26.CBT",
+      "note": "Day-count weighted probability from 30-Day Fed Funds Futures; FOMC_MEETING_DATES requires annual manual update",
+      "status": "ok",
+      "source": "yfinance/ZQ",
+      "as_of": "2026-04-01"
+    },
+    "USDCNY": {
+      "value": 6.874,
+      "chg_1d_pct": -0.55,
+      "chg_5d_pct": -0.26,
+      "ma5": 6.9,
+      "ma20": 6.89,
+      "dev_from_ma5_pct": -0.38,
+      "dev_from_ma20_pct": -0.24,
+      "direction": "down",
+      "status": "ok",
+      "source": "yfinance",
+      "as_of": "2026-04-01"
+    }
+  },
+  "layer2_domestic": {
+    "PMI_CAIXIN": {
+      "value": 50.8,
+      "period": "2026-03-31",
+      "status": "ok",
+      "source": "akshare/Caixin"
+    },
+    "PMI_OFFICIAL": {
+      "composite": 50.4,
+      "new_orders": null,
+      "finished_goods_inventory": null,
+      "period": "2026年03月份",
+      "note": "PMI sub-indices (new_orders/inventory) not available via akshare; check manually",
+      "manual_url": "https://data.stats.gov.cn/easyquery.htm?cn=A01",
+      "status": "ok",
+      "source": "akshare/NBS"
+    },
+    "PPI": {
+      "yoy_pct": -0.9,
+      "period": "2026年02月份",
+      "status": "ok",
+      "source": "akshare/NBS"
+    },
+    "NEW_LOANS": {
+      "total_new_loans_100m": 9000.0,
+      "yoy_pct": -11.0,
+      "corp_mlt_loans_100m": null,
+      "period": "2026-02",
+      "note": "total_new_loans = 当月新增人民币贷款合计; corp_mlt_loans (企业中长期贷款分项) 暂无 akshare 接口，请手工补录",
+      "status": "ok",
+      "source": "akshare/PBOC",
+      "manual_url": "http://www.pbc.gov.cn/diaochatongji/116219/index.html"
+    },
+    "CPI": {
+      "yoy_pct": 1.3,
+      "period": "2026年02月份",
+      "status": "ok",
+      "source": "akshare/NBS"
+    },
+    "LPR_1Y": {
+      "value": 3.0,
+      "prev_value": 3.0,
+      "chg": 0.0,
+      "period": "2026-03",
+      "status": "ok",
+      "source": "akshare/PBOC"
+    },
+    "LPR_5Y": {
+      "value": 3.5,
+      "prev_value": 3.5,
+      "chg": 0.0,
+      "period": "2026-03",
+      "status": "ok",
+      "source": "akshare/PBOC"
+    }
+  },
+  "layer3_market": {
+    "BOND_YIELD_10Y": {
+      "yield_pct": 1.8171,
+      "status": "ok",
+      "source": "akshare/chinabond",
+      "as_of": "2026-03-31"
+    },
+    "MARGIN_BALANCE": {
+      "total_100m": 26005.18,
+      "sse_100m": 13287.18,
+      "szse_100m": 12718.0,
+      "chg_5d_100m": -49.41,
+      "chg_5d_pct": -0.19,
+      "chg_1m_100m": -650.37,
+      "chg_1m_pct": -2.44,
+      "direction": "down",
+      "note": "unit: 亿元; chg = change vs ~5 trading days / ~1 month ago",
+      "status": "ok",
+      "source": "akshare/SSE+SZSE",
+      "as_of": "2026-03-31"
+    },
+    "NORTHBOUND_FLOW": {
+      "today_100m": NaN,
+      "cumulative_5d_100m": 0.0,
+      "direction": "flat",
+      "note": "unit: 亿元; data published after market close, may reflect prev day",
+      "status": "ok",
+      "source": "akshare/eastmoney",
+      "as_of": "2026-03-31"
+    },
+    "ERP": {
+      "value": 0.047923,
+      "pe_static": 15.13,
+      "pe_as_of": "20260304",
+      "pe_source": "csindex.com.cn/xls",
+      "bond_yield_pct": 1.8171,
+      "bond_as_of": "2026-03-31",
+      "note": "ERP = 1/PE - bond_yield/100; PE is static (annual report basis, CSI methodology); positive = equity premium over risk-free rate",
+      "status": "ok",
+      "as_of": "2026-03-31"
+    }
+  },
+  "layer4_global_valuation": {
+    "SP500_PE": {
+      "value": 25.8,
+      "zone": "偏高（历史均值18-20x）",
+      "note": "PE via SPY ETF (proxy for S&P 500)",
+      "status": "ok",
+      "source": "yfinance/SPY",
+      "as_of": "2026-04-01"
+    },
+    "HSI_PE": {
+      "value": 19.65,
+      "zone": "偏高（历史均值10-12x）",
+      "note": "PE via EWH (proxy for Hang Seng Index)",
+      "status": "ok",
+      "source": "yfinance/EWH",
+      "as_of": "2026-04-01"
+    }
+  },
+  "derived": {
+    "copper_gold_ratio": {
+      "value": 1.19,
+      "interpretation_zone": "bearish",
+      "status": "ok"
+    },
+    "ppi_cpi_spread": {
+      "value": -2.2,
+      "ppi": -0.9,
+      "cpi": 1.3,
+      "status": "ok"
+    },
+    "cn_us_10y_spread": {
+      "value": 2.4939,
+      "us10y": 4.311,
+      "cn10y": 1.8171,
+      "note": "US10Y - CN10Y；负值表示中国利率低于美国",
+      "status": "ok"
+    },
+    "us_term_spread": {
+      "value": 0.711,
+      "us10y": 4.311,
+      "us2y": 3.6,
+      "note": "US10Y - US2Y；负值=收益率曲线倒挂，历史上常为衰退先行指标",
+      "status": "ok"
+    },
+    "us_real_rate_approx": {
+      "value": 3.011,
+      "us10y": 4.311,
+      "cn_cpi": 1.3,
+      "note": "US10Y - CN_CPI（近似值，待条件允许时替换为美国CPI）",
+      "status": "ok"
+    }
+  },
+  "errors": []
+}
