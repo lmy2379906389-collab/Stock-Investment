@@ -437,67 +437,101 @@ def fetch_us2y() -> Tuple[str, Dict]:
 
 # ─── Layer 2：国内基本面 ────────────────────────────────────────────────────────
 
+def _is_recent_period(period_str: str, months: int = 3) -> bool:
+    """判断 period 字符串是否在近 N 个月内。支持多种格式：
+    YYYY-MM-DD、YYYY-MM、YYYY年MM月份、YYYY年MM月
+    """
+    import re as _re
+    try:
+        clean = _re.sub(r"[年月份]", "-", str(period_str)).strip("-").strip()
+        parts = [p for p in clean.split("-") if p]
+        year, month = int(parts[0]), int(parts[1])
+        period_date = date(year, month, 1)
+        today = date.today()
+        diff_months = (today.year - period_date.year) * 12 + (today.month - period_date.month)
+        return diff_months <= months
+    except Exception:
+        return False
+
+
 def fetch_pmi_official() -> Tuple[str, Dict]:
     """
     官方制造业 PMI 综合值。
-    主力：akshare.macro_china_pmi()
-    结构：['月份','制造业-指数','制造业-同比增长','非制造业-指数','非制造业-同比增长']
-    **降序**（最新在 iloc[0]），数据更新到 2026-02。
-    备用：macro_china_pmi_yearly()（财经日历格式，数据较旧止于 2025-08）
-    PMI 分项（新订单、产成品库存）两个接口均不含，标注手工 URL。
+    来源 1（主力）：macro_china_pmi()     — 东方财富，降序，iloc[0] 最新
+    来源 2（备用）：macro_china_pmi_yearly() — Jin10 财经日历，有时停更
+    每个来源取值后进行时效性校验（period 必须在近 3 个月内），
+    过期数据直接跳过并记录到 errors，宁可返回 unavailable 也不返回过期数据。
+    注：akshare 无第三个官方制造业 PMI 接口（macro_china_pmi_man 等均不存在）。
     """
     log.info("Fetching Official PMI …")
+    stale_errors: list = []
 
     if not _AK_OK:
         return "PMI_OFFICIAL", _unavail("akshare not installed", MANUAL_URLS["PMI_official"])
 
-    # 主力：macro_china_pmi（降序，iloc[0] = 最新）
+    # ── 来源 1：macro_china_pmi（东方财富，降序，iloc[0] = 最新行）─────────────
     try:
         df = ak.macro_china_pmi()
         if df is not None and not df.empty:
-            latest = df.iloc[0]
-            cols   = df.columns.tolist()
-            log.debug(f"PMI (macro_china_pmi) columns: {cols}")
+            latest  = df.iloc[0]
+            cols    = df.columns.tolist()
             mfg_col = next((c for c in cols if "制造业-指数" in c or c == "制造业"), None)
+            period  = str(latest.iloc[0])   # '月份' 列，如 "2026年03月份"
             if mfg_col:
-                return "PMI_OFFICIAL", {
-                    "composite":                _round(latest[mfg_col], 1),
-                    "new_orders":               None,
-                    "finished_goods_inventory": None,
-                    "period":                   str(latest.iloc[0]),  # '月份' 列
-                    "note": "PMI sub-indices (new_orders/inventory) not available via akshare; check manually",
-                    "manual_url": MANUAL_URLS["PMI_official"],
-                    "status":     "ok",
-                    "source":     "akshare/NBS",
-                }
+                if not _is_recent_period(period):
+                    msg = f"stale data: period={period}, skipped (source: macro_china_pmi)"
+                    log.warning(f"PMI_OFFICIAL: {msg}")
+                    stale_errors.append({"indicator": "PMI_OFFICIAL", "error": msg})
+                else:
+                    return "PMI_OFFICIAL", {
+                        "composite":                _round(latest[mfg_col], 1),
+                        "new_orders":               None,
+                        "finished_goods_inventory": None,
+                        "period":                   period,
+                        "note": "PMI sub-indices not available via akshare; check manually",
+                        "manual_url": MANUAL_URLS["PMI_official"],
+                        "status":     "ok",
+                        "source":     "akshare/eastmoney",
+                    }
     except Exception as e:
         log.debug(f"macro_china_pmi failed: {e}")
 
-    # 备用：macro_china_pmi_yearly（财经日历格式，升序，dropna 取最新非空行）
+    # ── 来源 2：macro_china_pmi_yearly（Jin10 财经日历，升序，dropna 取最后非空行）
     try:
         df2 = ak.macro_china_pmi_yearly()
         if df2 is None or df2.empty:
-            raise ValueError("akshare returned empty PMI data")
-        cols2 = df2.columns.tolist()
-        valid = df2.dropna(subset=["今值"]) if "今值" in cols2 else df2
+            raise ValueError("empty response")
+        valid = df2.dropna(subset=["今值"]) if "今值" in df2.columns else df2
         if valid.empty:
-            raise ValueError("All PMI '今值' rows are NaN")
-        latest    = valid.iloc[-1]
-        composite = _round(latest["今值"], 1) if "今值" in cols2 else None
-        period    = str(latest.get("日期", latest.iloc[0]))
-        return "PMI_OFFICIAL", {
-            "composite":                composite,
-            "new_orders":               None,
-            "finished_goods_inventory": None,
-            "period":                   period,
-            "note": "PMI sub-indices not available via akshare; check manually",
-            "manual_url": MANUAL_URLS["PMI_official"],
-            "status":     "ok",
-            "source":     "akshare/NBS",
-        }
-    except Exception as exc:
-        log.warning(f"Official PMI failed: {exc}")
-        return "PMI_OFFICIAL", _unavail(str(exc), MANUAL_URLS["PMI_official"])
+            raise ValueError("all 今值 rows are NaN")
+        latest2   = valid.iloc[-1]
+        composite = _round(latest2["今值"], 1) if "今值" in df2.columns else None
+        period2   = str(latest2.get("日期", latest2.iloc[0]))
+        if not _is_recent_period(period2):
+            msg = f"stale data: period={period2}, skipped (source: macro_china_pmi_yearly)"
+            log.warning(f"PMI_OFFICIAL: {msg}")
+            stale_errors.append({"indicator": "PMI_OFFICIAL", "error": msg})
+        else:
+            return "PMI_OFFICIAL", {
+                "composite":                composite,
+                "new_orders":               None,
+                "finished_goods_inventory": None,
+                "period":                   period2,
+                "note": "PMI sub-indices not available via akshare; check manually",
+                "manual_url": MANUAL_URLS["PMI_official"],
+                "status":     "ok",
+                "source":     "akshare/jin10",
+            }
+    except Exception as e:
+        log.debug(f"macro_china_pmi_yearly failed: {e}")
+
+    # ── 所有来源均过期或失败 ──────────────────────────────────────────────────────
+    log.warning("PMI_OFFICIAL: all sources returned stale or empty data")
+    result = _unavail(str(stale_errors) if stale_errors else "all sources failed",
+                      MANUAL_URLS["PMI_official"])
+    result["reason"] = "all sources returned stale or empty data"
+    result["stale_sources"] = stale_errors
+    return "PMI_OFFICIAL", result
 
 
 def fetch_pmi_caixin() -> Tuple[str, Dict]:

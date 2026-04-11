@@ -1,0 +1,65 @@
+{
+  "meta": {
+    "generated_at": "2026-04-10T08:13:45.302147+08:00",
+    "stock_code": "300750",
+    "stock_name": "宁德时代",
+    "index_code": "000300"
+  },
+  "price": {
+    "current": {
+      "value": 389.99,
+      "status": "ok",
+      "source": "akshare/qq_finance",
+      "as_of": "2026-04-09"
+    }
+  },
+  "pe": {
+    "stock_ttm_pe": {
+      "value": 23.1791,
+      "status": "ok",
+      "source": "derived",
+      "as_of": "2026-04-09"
+    },
+    "csi300_ttm_pe": {
+      "value": 14.04,
+      "status": "ok",
+      "source": "akshare/csindex",
+      "as_of": "2026-04-09"
+    },
+    "relative_pe": {
+      "value": 1.6509,
+      "status": "ok",
+      "source": "derived",
+      "as_of": "2026-04-09"
+    },
+    "relative_pe_percentile_3y": {
+      "value": 0.6329,
+      "status": "ok",
+      "source": "derived",
+      "as_of": "2026-04-09"
+    },
+    "relative_pe_p25_3y": {
+      "value": 1.4805,
+      "status": "ok",
+      "source": "derived",
+      "as_of": "2026-04-09"
+    },
+    "relative_pe_p75_3y": {
+      "value": 1.6915,
+      "status": "ok",
+      "source": "derived",
+      "as_of": "2026-04-09"
+    }
+  },
+  "beta": {
+    "value": 1.5573,
+    "status": "ok",
+    "source": "derived",
+    "method": "OLS regression on daily returns",
+    "period_start": "2024-04-09",
+    "period_end": "2026-04-09",
+    "r_squared": 0.5065,
+    "n_obs": 485
+  },
+  "errors": []
+}

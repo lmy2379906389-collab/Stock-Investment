@@ -7,19 +7,27 @@ FETCH_MACRO_DIR = Path(__file__).parent
 sys.path.insert(0, str(FETCH_MACRO_DIR))
 import fetch_macro
 import fetch_space
+import fetch_finance
+import fetch_market
 
-MACRO_CACHE_FILE  = FETCH_MACRO_DIR / "output" / "macro_snapshot.json"
-SPACE_CACHE_FILE  = FETCH_MACRO_DIR / "output" / "space_snapshot.json"
-MACRO_MAX_AGE_H   = 6
-SPACE_MAX_AGE_H   = 12
+MACRO_CACHE_FILE    = FETCH_MACRO_DIR / "output" / "macro_snapshot.json"
+SPACE_CACHE_FILE    = FETCH_MACRO_DIR / "output" / "space_snapshot.json"
+FINANCE_CACHE_FILE  = FETCH_MACRO_DIR / "output" / "finance_snapshot.json"
+MARKET_CACHE_FILE   = FETCH_MACRO_DIR / "output" / "market_snapshot.json"
+MACRO_MAX_AGE_H     = 6
+SPACE_MAX_AGE_H     = 12
+FINANCE_MAX_AGE_H   = 6
+MARKET_MAX_AGE_H    = 6
 PORT = 5000
 HOST = "127.0.0.1"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 app = Flask(__name__)
-_macro_lock = threading.Lock()
-_space_lock = threading.Lock()
+_macro_lock   = threading.Lock()
+_space_lock   = threading.Lock()
+_finance_lock = threading.Lock()
+_market_lock  = threading.Lock()
 
 
 def _load_json(path: Path):
@@ -55,6 +63,24 @@ def _run_space_fetch(mode: str = "daily"):
         log.info(f"Running fetch_space.run(mode={mode})...")
         snapshot = fetch_space.run(mode=mode)
         # fetch_space.run() already writes the file; return snapshot directly
+        return snapshot
+
+
+def _run_finance_fetch():
+    with _finance_lock:
+        log.info("Running fetch_finance.run()...")
+        snapshot = fetch_finance.run()
+        FINANCE_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(FINANCE_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(snapshot, f, ensure_ascii=False, indent=2, default=str)
+        return snapshot
+
+
+def _run_market_fetch():
+    with _market_lock:
+        log.info("Running fetch_market.run()...")
+        snapshot = fetch_market.run()
+        # fetch_market.run() already writes the file; return snapshot directly
         return snapshot
 
 
@@ -107,6 +133,54 @@ def space_cached():
     if snapshot is None or _cache_age_hours(snapshot) > SPACE_MAX_AGE_H:
         try:
             snapshot = _run_space_fetch(mode=mode)
+            snapshot["_served_from"] = "fresh"
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    else:
+        snapshot["_served_from"] = f"cache ({_cache_age_hours(snapshot):.1f}h old)"
+    return jsonify(snapshot)
+
+
+@app.route("/finance")
+def finance_fresh():
+    try:
+        snapshot = _run_finance_fetch()
+        snapshot["_served_from"] = "fresh"
+        return jsonify(snapshot)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/finance/cached")
+def finance_cached():
+    snapshot = _load_json(FINANCE_CACHE_FILE)
+    if snapshot is None or _cache_age_hours(snapshot) > FINANCE_MAX_AGE_H:
+        try:
+            snapshot = _run_finance_fetch()
+            snapshot["_served_from"] = "fresh"
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    else:
+        snapshot["_served_from"] = f"cache ({_cache_age_hours(snapshot):.1f}h old)"
+    return jsonify(snapshot)
+
+
+@app.route("/market")
+def market_fresh():
+    try:
+        snapshot = _run_market_fetch()
+        snapshot["_served_from"] = "fresh"
+        return jsonify(snapshot)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/market/cached")
+def market_cached():
+    snapshot = _load_json(MARKET_CACHE_FILE)
+    if snapshot is None or _cache_age_hours(snapshot) > MARKET_MAX_AGE_H:
+        try:
+            snapshot = _run_market_fetch()
             snapshot["_served_from"] = "fresh"
         except Exception as e:
             return jsonify({"error": str(e)}), 500

@@ -1,0 +1,378 @@
+{
+  "meta": {
+    "generated_at": "2026-04-07T08:22:11.932100+08:00",
+    "stock_code": "002049",
+    "stock_name": "紫光国微",
+    "index_code": "000300",
+    "asset_type": "heavy",
+    "margin_reference": "净利率中枢 6%-12%",
+    "capex_reference": "资本开支/营收常态 15%-25%",
+    "latest_report_period": "2025Q3",
+    "read_instructions": "本文件包含企业财务估值的三层递进分析数据。请按以下顺序阅读：【问题一】先看扣非比(non_recurring_ratio)定底色，再看现金流比(ocf_to_net_profit)和应收周转率(ar_turnover)交叉验证，最后看商誉(goodwill_to_equity)排雷，输出一个利润真实性的定性结论。【问题二】看DuPont三因子的同比变动方向组合判断经营趋势，叠加存货周转率定位问题，看资本开支和研发强度趋势判断投入产出效率，看增速劈叉(revenue_growth vs net_profit_growth)判断增长质量，cash_coverage_ratio<1直接标红。【问题三】先看FY+1 Forward PE获得绝对水位直觉，再看PEG短期判断一年期赔率，看PEG中期判断长期资金视角，看预期修正方向判断预期差，看relative_pe_percentile确认情绪位置，最后看价值区间定位当前价格，用反向DCF隐含增速做校验。PEG短期合理但PEG中期偏贵时要特别警惕。问题一二的结论必须叠加到问题三的判断中。"
+  },
+  "q1_profit_quality": {
+    "ocf_to_net_profit": {
+      "value": 0.5444,
+      "status": "ok",
+      "source": "derived",
+      "as_of": "2025Q3"
+    },
+    "non_recurring_ratio": {
+      "value": 0.8118,
+      "status": "ok",
+      "source": "derived",
+      "as_of": "2025Q3"
+    },
+    "ar_turnover": {
+      "value": 1.183,
+      "status": "ok",
+      "source": "derived",
+      "as_of": "2025Q3"
+    },
+    "goodwill_to_equity": {
+      "value": 0.0516,
+      "status": "ok",
+      "source": "derived",
+      "as_of": "2025Q3"
+    }
+  },
+  "q2_operating_trend": {
+    "dupont": {
+      "net_margin": {
+        "value": 0.2328,
+        "status": "ok",
+        "source": "derived",
+        "as_of": "2025Q3"
+      },
+      "net_margin_yoy_direction": {
+        "value": null,
+        "status": "unavailable",
+        "source": "derived",
+        "as_of": "2025Q3"
+      },
+      "asset_turnover": {
+        "value": 0.3526,
+        "status": "ok",
+        "source": "derived",
+        "as_of": "2025Q3"
+      },
+      "asset_turnover_yoy_direction": {
+        "value": null,
+        "status": "unavailable",
+        "source": "derived",
+        "as_of": "2025Q3"
+      },
+      "equity_multiplier": {
+        "value": 1.3722,
+        "status": "ok",
+        "source": "derived",
+        "as_of": "2025Q3"
+      },
+      "equity_multiplier_yoy_direction": {
+        "value": null,
+        "status": "unavailable",
+        "source": "derived",
+        "as_of": "2025Q3"
+      }
+    },
+    "inventory_turnover": {
+      "value": 1.3771,
+      "status": "ok",
+      "source": "derived",
+      "as_of": "2025Q3"
+    },
+    "financial_safety": {
+      "interest_bearing_debt_ratio": {
+        "value": 0.1256,
+        "status": "ok",
+        "source": "derived",
+        "as_of": "2025Q3"
+      },
+      "cash_coverage_ratio": {
+        "value": 1.7134,
+        "status": "ok",
+        "source": "derived",
+        "as_of": "2025Q3"
+      }
+    },
+    "investment_intensity": {
+      "capex_to_revenue": {
+        "value": 0.0612,
+        "status": "ok",
+        "source": "derived",
+        "as_of": "2025Q3"
+      },
+      "rd_intensity": {
+        "value": 0.1543,
+        "status": "ok",
+        "source": "derived",
+        "as_of": "2025Q3"
+      },
+      "rd_capitalization_rate": {
+        "value": 0.167,
+        "status": "ok",
+        "source": "derived",
+        "as_of": "2025Q3"
+      }
+    },
+    "growth_quality": {
+      "revenue_growth": {
+        "value": 0.4432,
+        "status": "ok",
+        "source": "derived",
+        "as_of": "2025Q3"
+      },
+      "net_profit_growth": {
+        "value": 0.4181,
+        "status": "ok",
+        "source": "derived",
+        "as_of": "2025Q3"
+      }
+    }
+  },
+  "q3_valuation": {
+    "forward_pe_fy1": {
+      "value": 20.2243,
+      "status": "ok",
+      "source": "derived",
+      "as_of": "2026-04-07"
+    },
+    "forward_pe_fy2": {
+      "value": null,
+      "status": "unavailable",
+      "source": "derived",
+      "as_of": "2026-04-07"
+    },
+    "peg_short_term": {
+      "value": 0.2235,
+      "status": "ok",
+      "source": "derived",
+      "as_of": "2026-04-07"
+    },
+    "peg_medium_term": {
+      "value": null,
+      "status": "unavailable",
+      "source": "derived",
+      "as_of": "2026-04-07"
+    },
+    "two_year_cagr": {
+      "value": null,
+      "status": "unavailable",
+      "source": "derived",
+      "as_of": "2026-04-07"
+    },
+    "ttm_pe": {
+      "value": 38.5282,
+      "status": "ok",
+      "source": "derived",
+      "as_of": "2026-04-07"
+    },
+    "relative_pe_percentile": {
+      "value": 0.2907,
+      "status": "ok",
+      "source": "derived",
+      "as_of": "2026-04-07"
+    },
+    "current_price": {
+      "value": 64.92,
+      "status": "ok",
+      "source": "akshare",
+      "as_of": "2026-04-07"
+    },
+    "consensus": {
+      "fy1_eps": {
+        "value": 3.21,
+        "status": "ok",
+        "source": "ths_profit_forecast",
+        "as_of": "2026-04-07"
+      },
+      "fy2_eps": {
+        "value": null,
+        "status": "unavailable",
+        "source": "ths_profit_forecast",
+        "as_of": "2026-04-07"
+      },
+      "fy1_net_profit": {
+        "value": 2726000000.0,
+        "status": "ok",
+        "source": "ths_profit_forecast",
+        "as_of": "2026-04-07"
+      },
+      "fy2_net_profit": {
+        "value": null,
+        "status": "unavailable",
+        "source": "ths_profit_forecast",
+        "as_of": "2026-04-07"
+      },
+      "fy1_growth": {
+        "value": 0.905,
+        "status": "ok",
+        "source": "derived",
+        "as_of": "2026-04-07"
+      },
+      "fy2_growth": {
+        "value": null,
+        "status": "unavailable",
+        "source": "derived",
+        "as_of": "2026-04-07"
+      },
+      "fy1_eps_revision_3m": {
+        "value": null,
+        "status": "insufficient_history",
+        "source": "2026-04-07",
+        "as_of": ""
+      },
+      "fy2_eps_revision_3m": {
+        "value": null,
+        "status": "insufficient_history",
+        "source": "2026-04-07",
+        "as_of": ""
+      }
+    },
+    "value_range": {
+      "method_a_pe_low": {
+        "value": 28.0661,
+        "status": "ok",
+        "source": "derived",
+        "as_of": "2026-04-07"
+      },
+      "method_a_pe_high": {
+        "value": 53.7692,
+        "status": "ok",
+        "source": "derived",
+        "as_of": "2026-04-07"
+      },
+      "method_b_pe_low": {
+        "value": null,
+        "status": "unavailable",
+        "source": "derived",
+        "as_of": "2026-04-07"
+      },
+      "method_b_pe_high": {
+        "value": null,
+        "status": "unavailable",
+        "source": "derived",
+        "as_of": "2026-04-07"
+      },
+      "price_range_a_low": {
+        "value": null,
+        "status": "unavailable",
+        "source": "derived",
+        "as_of": "2026-04-07"
+      },
+      "price_range_a_high": {
+        "value": null,
+        "status": "unavailable",
+        "source": "derived",
+        "as_of": "2026-04-07"
+      },
+      "price_range_b_low": {
+        "value": null,
+        "status": "unavailable",
+        "source": "derived",
+        "as_of": "2026-04-07"
+      },
+      "price_range_b_high": {
+        "value": null,
+        "status": "unavailable",
+        "source": "derived",
+        "as_of": "2026-04-07"
+      },
+      "price_range_low": {
+        "value": null,
+        "status": "unavailable",
+        "source": "derived",
+        "as_of": "2026-04-07"
+      },
+      "price_range_high": {
+        "value": null,
+        "status": "unavailable",
+        "source": "derived",
+        "as_of": "2026-04-07"
+      },
+      "has_intersection": null,
+      "current_price_position": null
+    },
+    "reverse_dcf": {
+      "wacc": {
+        "value": null,
+        "status": "unavailable",
+        "source": "derived",
+        "as_of": "2026-04-07"
+      },
+      "wacc_components": {
+        "rf": {
+          "value": null,
+          "status": "unavailable",
+          "source": "macro_snapshot",
+          "as_of": ""
+        },
+        "erp": {
+          "value": null,
+          "status": "unavailable",
+          "source": "macro_snapshot",
+          "as_of": ""
+        },
+        "beta": {
+          "value": null,
+          "status": "unavailable",
+          "source": "derived",
+          "as_of": ""
+        },
+        "re": {
+          "value": null,
+          "status": "unavailable",
+          "source": "derived",
+          "as_of": ""
+        },
+        "rd": {
+          "value": null,
+          "status": "unavailable",
+          "source": "derived",
+          "as_of": ""
+        },
+        "tax_rate": {
+          "value": null,
+          "status": "unavailable",
+          "source": "derived",
+          "as_of": ""
+        },
+        "equity_weight": {
+          "value": null,
+          "status": "unavailable",
+          "source": "derived",
+          "as_of": ""
+        },
+        "debt_weight": {
+          "value": null,
+          "status": "unavailable",
+          "source": "derived",
+          "as_of": ""
+        }
+      },
+      "ttm_fcf": {
+        "value": 402976724.41,
+        "status": "ok",
+        "source": "derived",
+        "as_of": "2025Q3"
+      },
+      "implied_growth_rate": {
+        "value": null,
+        "status": "unavailable",
+        "source": "derived",
+        "as_of": "2026-04-07"
+      },
+      "vs_consensus_cagr": null
+    }
+  },
+  "errors": [
+    {
+      "indicator": "wacc",
+      "error": "Market cap unavailable"
+    },
+    {
+      "indicator": "reverse_dcf",
+      "error": "Missing: ['wacc', 'market_cap']"
+    }
+  ]
+}
