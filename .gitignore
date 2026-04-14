@@ -1,5 +1,19 @@
+# Python 缓存文件
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# 日志文件
 *.log
+
+# 运行生成的输出数据文件夹
 output/
+
+# Python虚拟环境（如果项目里有.venv文件夹，加上这个）
 .venv/
+.env/
+
+# 系统自动生成的垃圾文件
+.DS_Store
+Thumbs.db

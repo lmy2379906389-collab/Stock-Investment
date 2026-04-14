@@ -54,8 +54,8 @@ except ImportError:
     _SCI_OK = False
 
 # ============ 配置区 ============
-STOCK_CODE = "300750"           # 目标股票代码
-STOCK_NAME = "宁德时代"
+STOCK_CODE = "001287"           # 目标股票代码
+STOCK_NAME = "中电港"
 INDEX_CODE = "000300"           # 基准指数（沪深300）
 
 PE_HISTORY_YEARS = 3            # 相对 PE 分位历史窗口（年）
