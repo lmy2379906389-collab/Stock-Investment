@@ -88,6 +88,54 @@ MANUAL_URLS = {
     "hsi_pe":         "https://www.wsj.com/market-data/quotes/index/HK/HSI/financials/annual/income-statement",
 }
 
+# ─── 历史归档配置 ──────────────────────────────────────────────────────────────
+
+HISTORY_PATH = os.path.join(OUTPUT_DIR, "macro_history.json")
+ARCHIVE_PATH = os.path.join(OUTPUT_DIR, "macro_history_archive.json")
+
+# 策略 A: 按 period 去重（月度/准静态数据）
+PERIOD_BASED_INDICATORS = [
+    ('layer2_domestic.PMI_OFFICIAL', 'period'),
+    ('layer2_domestic.PMI_CAIXIN', 'period'),
+    ('layer2_domestic.NEW_LOANS', 'period'),
+    ('layer2_domestic.PPI', 'period'),
+    ('layer2_domestic.CPI', 'period'),
+    ('layer2_domestic.LPR_1Y', 'period'),
+    ('layer2_domestic.LPR_5Y', 'period'),
+]
+
+# 策略 B: 按阈值去重（日级数据）
+# unit 说明: 'pct'=百分比变化, 'abs'=绝对值变化, 'bp/100'=基点/100（债券收益率）
+THRESHOLD_BASED_INDICATORS = {
+    'layer0_usd_bonds.US10Y':       {'field': 'value', 'threshold': 0.10, 'unit': 'bp/100'},   # ±10bp
+    'layer0_usd_bonds.US2Y':        {'field': 'value', 'threshold': 0.10, 'unit': 'bp/100'},
+    'layer1_external.DXY':          {'field': 'value', 'threshold': 0.005, 'unit': 'pct'},     # ±0.5%
+    'layer1_external.BRENT':        {'field': 'value', 'threshold': 0.03,  'unit': 'pct'},     # ±3%
+    'layer1_external.COPPER':       {'field': 'value', 'threshold': 0.02,  'unit': 'pct'},
+    'layer1_external.GOLD':         {'field': 'value', 'threshold': 0.02,  'unit': 'pct'},
+    'layer1_external.VIX':          {'field': 'value', 'threshold': 3.0,   'unit': 'abs'},     # ±3
+    'layer1_external.USDCNY':       {'field': 'value', 'threshold': 0.005, 'unit': 'pct'},
+    'layer3_market.BOND_YIELD_10Y': {'field': 'yield_pct', 'threshold': 0.05, 'unit': 'bp/100'},
+    'layer3_market.MARGIN_BALANCE': {'field': 'total_100m', 'threshold': 0.02, 'unit': 'pct'},
+    'layer3_market.ERP':            {'field': 'value', 'threshold': 0.002, 'unit': 'abs'},
+    'layer4_global_valuation.SP500_PE': {'field': 'value', 'threshold': 0.3, 'unit': 'abs'},
+    'layer4_global_valuation.HSI_PE':   {'field': 'value', 'threshold': 0.3, 'unit': 'abs'},
+    'derived.copper_gold_ratio':    {'field': 'value', 'threshold': 0.05, 'unit': 'abs'},
+}
+
+# 策略 C: FEDWATCH 专用（按概率分布变化）
+FEDWATCH_PROB_THRESHOLD = 5.0  # 任一概率项变动超过 5pct 才记录
+
+# 兜底采样: 若某日级指标连续 N 个采集日都未触发阈值，第 N+1 次强制记录
+FALLBACK_SAMPLING_DAYS = 10
+
+# 时间窗口上限（超出部分归档到 archive）
+HISTORY_RETENTION = {
+    'daily': 365,       # 日级指标保留 12 个月
+    'monthly': 730,     # 月度指标保留 24 个月
+    'fedwatch': 180,    # FEDWATCH 保留 6 个月
+}
+
 # ─── 日志 ──────────────────────────────────────────────────────────────────────
 
 logging.basicConfig(
@@ -1019,57 +1067,6 @@ def fetch_margin_balance() -> Tuple[str, Dict]:
     }
 
 
-def fetch_northbound_flow() -> Tuple[str, Dict]:
-    """
-    ak.stock_hsgt_hist_em(symbol="北向资金")
-    列：日期, 当日成交净买额（亿元）
-    升序，最新在 iloc[-1]
-    """
-    log.info("Fetching Northbound Flow …")
-    if not _AK_OK:
-        return "NORTHBOUND_FLOW", _unavail("akshare not installed")
-    try:
-        df = ak.stock_hsgt_hist_em(symbol="北向资金")
-        if df is None or df.empty:
-            raise ValueError("empty DataFrame")
-        df = df.sort_values("日期").reset_index(drop=True)
-        net_col = "当日成交净买额"
-        if net_col not in df.columns:
-            raise ValueError(f"column '{net_col}' not found; actual: {df.columns.tolist()}")
-        import math
-        def _is_valid_num(v):
-            try:
-                return v is not None and not math.isnan(float(v))
-            except Exception:
-                return False
-
-        today_val = _round(float(df[net_col].iloc[-1]), 2)
-        as_of     = str(df["日期"].iloc[-1])
-
-        if not _is_valid_num(today_val):
-            return "NORTHBOUND_FLOW", _unavail(
-                "NaN returned, possibly holiday or post-close"
-            )
-
-        cum_5d    = _round(float(df[net_col].iloc[-5:].sum()), 2)
-        direction = (
-            "inflow"  if (today_val or 0) > 0 else
-            "outflow" if (today_val or 0) < 0 else
-            "flat"
-        )
-        return "NORTHBOUND_FLOW", {
-            "today_100m":         today_val,
-            "cumulative_5d_100m": cum_5d,
-            "direction":          direction,
-            "note":               "unit: 亿元; data published after market close, may reflect prev day",
-            "status":             "ok",
-            "source":             "akshare/eastmoney",
-            "as_of":              as_of,
-        }
-    except Exception as exc:
-        log.warning(f"Northbound flow failed: {exc}")
-        return "NORTHBOUND_FLOW", _unavail(str(exc))
-
 
 # ─── Layer 4：全球市场估值 ─────────────────────────────────────────────────────
 
@@ -1387,7 +1384,6 @@ def run() -> Dict:
         fetch_csi300_pe,
         fetch_bond_yield_10y,
         fetch_margin_balance,
-        fetch_northbound_flow,
         fetch_us10y,
         fetch_us2y,
         fetch_sp500_pe,
@@ -1404,7 +1400,7 @@ def run() -> Dict:
     L0_KEYS = {"US10Y", "US2Y"}
     L1_KEYS = {"DXY", "BRENT", "COPPER", "GOLD", "VIX", "FEDWATCH", "USDCNY"}
     L2_KEYS = {"PMI_OFFICIAL", "PMI_CAIXIN", "NEW_LOANS", "PPI", "CPI"}
-    L3_KEYS = {"CSI300_PE", "BOND_YIELD_10Y", "MARGIN_BALANCE", "NORTHBOUND_FLOW"}
+    L3_KEYS = {"CSI300_PE", "BOND_YIELD_10Y", "MARGIN_BALANCE"}
     L4_KEYS = {"SP500_PE", "HSI_PE"}
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
@@ -1463,7 +1459,350 @@ def run() -> Dict:
     return snapshot
 
 
+# ─── 历史归档模块 ──────────────────────────────────────────────────────────────
+
+def _get_today_iso() -> str:
+    """返回今天的 ISO 日期字符串 YYYY-MM-DD"""
+    return date.today().isoformat()
+
+
+def _get_nested_value(data: Dict, path: str) -> Optional[Dict]:
+    """
+    从嵌套字典中按路径获取值
+    例如: path='layer2_domestic.PMI_CAIXIN' → data['layer2_domestic']['PMI_CAIXIN']
+    """
+    keys = path.split('.')
+    current = data
+    for key in keys:
+        if not isinstance(current, dict) or key not in current:
+            return None
+        current = current[key]
+    return current
+
+
+def _calculate_delta(current_val, last_val, unit: str) -> float:
+    """
+    计算两个值之间的差异
+    unit='pct' → 百分比变化
+    unit='abs' → 绝对值变化
+    unit='bp/100' → 基点变化（债券收益率已是百分比）
+    """
+    if current_val is None or last_val is None:
+        return float('inf')
+
+    try:
+        current = float(current_val)
+        last = float(last_val)
+
+        if unit == 'pct':
+            if last == 0:
+                return float('inf')
+            return abs((current - last) / last)
+        elif unit == 'abs' or unit == 'bp/100':
+            return abs(current - last)
+        else:
+            return float('inf')
+    except (ValueError, TypeError):
+        return float('inf')
+
+
+def _days_since(as_of_str: str) -> int:
+    """计算从 as_of 日期到今天的天数"""
+    try:
+        as_of_date = date.fromisoformat(as_of_str)
+        return (date.today() - as_of_date).days
+    except (ValueError, TypeError):
+        return 0
+
+
+def _update_by_period(history: Dict, snapshot: Dict, indicator_path: str,
+                      period_field: str, force: bool = False) -> None:
+    """
+    策略 A: 按 period 去重（月度/准静态数据）
+    若当期 period 与历史最新记录的 period 相同，则跳过；否则追加
+    """
+    indicator_data = _get_nested_value(snapshot, indicator_path)
+    if not indicator_data or indicator_data.get('status') not in ('ok', 'partial'):
+        return  # 数据不可用，跳过
+
+    current_period = indicator_data.get(period_field)
+    if not current_period:
+        return  # 无 period 字段，跳过
+
+    # 初始化指标历史记录列表
+    if indicator_path not in history['indicators']:
+        history['indicators'][indicator_path] = []
+
+    records = history['indicators'][indicator_path]
+
+    # 检查是否需要追加
+    should_append = force
+    reason = 'manual_force' if force else None
+
+    if not force:
+        if len(records) == 0:
+            should_append = True
+            reason = 'initial'
+        else:
+            last_record = records[0]  # 第一条为最新
+            last_period = last_record.get(period_field)
+            if current_period != last_period:
+                should_append = True
+                reason = 'period_change'
+
+    if should_append:
+        # 构建新记录（保留原始字段 + as_of + reason）
+        new_record = dict(indicator_data)
+        new_record['as_of'] = _get_today_iso()
+        new_record['reason'] = reason
+        # 移除 status/source/manual_url 等元数据字段
+        for meta_key in ['status', 'source', 'manual_url', 'note']:
+            new_record.pop(meta_key, None)
+        # 插入到列表开头（保持倒序）
+        records.insert(0, new_record)
+
+
+def _update_by_threshold(history: Dict, snapshot: Dict, indicator_path: str,
+                         config: Dict, force: bool = False) -> None:
+    """
+    策略 B: 按阈值去重（日级数据）
+    若当期值与历史最新记录的值差异超过阈值，则追加
+    若未超过阈值但距上次记录已超过 FALLBACK_SAMPLING_DAYS，则强制追加
+    """
+    indicator_data = _get_nested_value(snapshot, indicator_path)
+    if not indicator_data or indicator_data.get('status') not in ('ok', 'partial'):
+        return
+
+    field = config['field']
+    threshold = config['threshold']
+    unit = config['unit']
+
+    current_val = indicator_data.get(field)
+    if current_val is None:
+        return
+
+    # 初始化指标历史记录列表
+    if indicator_path not in history['indicators']:
+        history['indicators'][indicator_path] = []
+
+    records = history['indicators'][indicator_path]
+
+    # 检查是否需要追加
+    should_append = force
+    reason = 'manual_force' if force else None
+
+    if not force:
+        if len(records) == 0:
+            should_append = True
+            reason = 'initial'
+        else:
+            last_record = records[0]
+            last_val = last_record.get(field)
+            delta = _calculate_delta(current_val, last_val, unit)
+
+            if delta >= threshold:
+                should_append = True
+                reason = 'threshold_triggered'
+            else:
+                # 检查兜底采样
+                last_as_of = last_record.get('as_of', _get_today_iso())
+                days_elapsed = _days_since(last_as_of)
+                if days_elapsed >= FALLBACK_SAMPLING_DAYS:
+                    should_append = True
+                    reason = 'fallback_sampling'
+
+    if should_append:
+        new_record = dict(indicator_data)
+        new_record['as_of'] = _get_today_iso()
+        new_record['reason'] = reason
+        for meta_key in ['status', 'source', 'manual_url', 'note']:
+            new_record.pop(meta_key, None)
+        records.insert(0, new_record)
+
+
+def _update_fedwatch(history: Dict, snapshot: Dict, force: bool = False) -> None:
+    """
+    策略 C: FEDWATCH 专用（按概率分布变化）
+    若任一概率项变动超过 FEDWATCH_PROB_THRESHOLD，或 next_meeting_date 变化，则追加
+    """
+    indicator_path = 'layer1_external.FEDWATCH'
+    indicator_data = _get_nested_value(snapshot, indicator_path)
+    if not indicator_data or indicator_data.get('status') not in ('ok', 'partial'):
+        return
+
+    # 初始化指标历史记录列表
+    if indicator_path not in history['indicators']:
+        history['indicators'][indicator_path] = []
+
+    records = history['indicators'][indicator_path]
+
+    # 检查是否需要追加
+    should_append = force
+    reason = 'manual_force' if force else None
+
+    if not force:
+        if len(records) == 0:
+            should_append = True
+            reason = 'initial'
+        else:
+            last_record = records[0]
+
+            # 检查 next_meeting_date 是否变化
+            current_meeting = indicator_data.get('next_meeting_date')
+            last_meeting = last_record.get('next_meeting_date')
+            if current_meeting != last_meeting:
+                should_append = True
+                reason = 'meeting_rolled'
+            else:
+                # 检查概率变化
+                prob_fields = ['hold_prob_pct', 'cut_25bp_prob_pct', 'hike_25bp_prob_pct']
+                for field in prob_fields:
+                    current_prob = indicator_data.get(field, 0)
+                    last_prob = last_record.get(field, 0)
+                    if abs(current_prob - last_prob) >= FEDWATCH_PROB_THRESHOLD:
+                        should_append = True
+                        reason = 'prob_shift'
+                        break
+
+    if should_append:
+        new_record = dict(indicator_data)
+        new_record['as_of'] = _get_today_iso()
+        new_record['reason'] = reason
+        for meta_key in ['status', 'source', 'manual_url', 'note']:
+            new_record.pop(meta_key, None)
+        records.insert(0, new_record)
+
+
+def _apply_retention(history: Dict) -> Dict:
+    """
+    应用时间窗口上限，超出部分移到 archived 字典返回
+    """
+    archived = {'indicators': {}}
+    today = date.today()
+
+    for indicator_path, records in list(history['indicators'].items()):
+        # 判断指标类型
+        if indicator_path == 'layer1_external.FEDWATCH':
+            retention_days = HISTORY_RETENTION['fedwatch']
+        elif any(indicator_path == path for path, _ in PERIOD_BASED_INDICATORS):
+            retention_days = HISTORY_RETENTION['monthly']
+        else:
+            retention_days = HISTORY_RETENTION['daily']
+
+        # 分离保留和归档的记录
+        retained = []
+        to_archive = []
+
+        for record in records:
+            as_of_str = record.get('as_of')
+            if not as_of_str:
+                retained.append(record)
+                continue
+
+            try:
+                as_of_date = date.fromisoformat(as_of_str)
+                days_old = (today - as_of_date).days
+                if days_old <= retention_days:
+                    retained.append(record)
+                else:
+                    to_archive.append(record)
+            except (ValueError, TypeError):
+                retained.append(record)
+
+        # 更新 history
+        history['indicators'][indicator_path] = retained
+
+        # 收集归档记录
+        if to_archive:
+            archived['indicators'][indicator_path] = to_archive
+
+    return archived
+
+
+def _append_to_archive(archive_path: str, archived: Dict) -> None:
+    """
+    将归档记录追加到 archive 文件
+    """
+    if not archived['indicators']:
+        return  # 无需归档
+
+    # 读取现有 archive
+    if os.path.exists(archive_path):
+        try:
+            with open(archive_path, 'r', encoding='utf-8') as f:
+                archive = json.load(f)
+        except (json.JSONDecodeError, IOError):
+            archive = {'meta': {'created_at': _get_today_iso()}, 'indicators': {}}
+    else:
+        archive = {'meta': {'created_at': _get_today_iso()}, 'indicators': {}}
+
+    # 追加归档记录
+    for indicator_path, records in archived['indicators'].items():
+        if indicator_path not in archive['indicators']:
+            archive['indicators'][indicator_path] = []
+        archive['indicators'][indicator_path].extend(records)
+
+    # 写盘
+    with open(archive_path, 'w', encoding='utf-8') as f:
+        json.dump(archive, f, ensure_ascii=False, indent=2)
+
+
+def update_history(snapshot: Dict, history_path: str, archive_path: str,
+                   force_record: bool = False) -> None:
+    """
+    主函数：更新历史归档
+    """
+    # 1. 读取现有 history
+    history = None
+    if os.path.exists(history_path):
+        try:
+            with open(history_path, 'r', encoding='utf-8') as f:
+                history = json.load(f)
+        except (json.JSONDecodeError, IOError):
+            history = None
+
+    if not history:
+        history = {
+            'meta': {
+                'first_record': _get_today_iso(),
+                'last_update': _get_today_iso(),
+                'dedup_policy': 'period-based for monthly, threshold-based for daily (10-day fallback)',
+            },
+            'indicators': {},
+        }
+
+    # 2. 按三种策略判断每个指标是否追加
+    # 策略 A: 按 period 去重
+    for indicator_path, period_field in PERIOD_BASED_INDICATORS:
+        _update_by_period(history, snapshot, indicator_path, period_field, force=force_record)
+
+    # 策略 B: 按阈值去重
+    for indicator_path, config in THRESHOLD_BASED_INDICATORS.items():
+        _update_by_threshold(history, snapshot, indicator_path, config, force=force_record)
+
+    # 策略 C: FEDWATCH 专用
+    _update_fedwatch(history, snapshot, force=force_record)
+
+    # 3. 应用时间窗口上限，超出部分移到 archive
+    archived = _apply_retention(history)
+    if archived['indicators']:
+        _append_to_archive(archive_path, archived)
+
+    # 4. 更新 meta.last_update 并写盘
+    history['meta']['last_update'] = _get_today_iso()
+    with open(history_path, 'w', encoding='utf-8') as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+
+    log.info(f"历史归档已更新：{history_path}")
+
+
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description='宏观股市分析框架 — 数据采集')
+    parser.add_argument('--force-record', action='store_true',
+                        help='忽略所有去重策略，强制追加当期全部指标到 history')
+    args = parser.parse_args()
+
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     log.info("=" * 55)
@@ -1480,6 +1819,9 @@ def main():
         json.dump(snapshot, f, ensure_ascii=False, indent=2)
 
     log.info(f"输出已写入：{OUTPUT_FILE}")
+
+    # 更新历史归档
+    update_history(snapshot, HISTORY_PATH, ARCHIVE_PATH, force_record=args.force_record)
 
     # 打印摘要
     print("\n─── 采集摘要 ────────────────────────────────────")
