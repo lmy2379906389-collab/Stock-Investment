@@ -483,28 +483,6 @@ def fetch_qvix() -> Tuple[str, Any]:
         return "QVIX", _unavail(src, str(exc))
 
 
-def fetch_new_investors() -> Tuple[str, Any]:
-    """新增投资者数量（中登公司月度数据）。
-    确认列名（2026-04-13）：数据日期, 新增投资者-数量, ...
-    单位：万户。数据升序，tail=最新。
-    """
-    log.info("Fetching new investor statistics …")
-    src = "akshare:stock_account_statistics_em"
-    if not (_AK_OK and _PD_OK):
-        return "NEW_INVESTORS", _unavail(src, "akshare or pandas not installed")
-    try:
-        df = _with_retry(ak.stock_account_statistics_em)
-        if df.empty:
-            return "NEW_INVESTORS", _unavail(src, "返回数据为空")
-        last  = df.iloc[-1]
-        val   = _round(float(last["新增投资者-数量"]), 2)
-        as_of = str(last["数据日期"])[:7]  # YYYY-MM
-        return "NEW_INVESTORS", {"value": val, "as_of": as_of}
-    except Exception as exc:
-        log.error(f"fetch_new_investors failed: {exc}")
-        return "NEW_INVESTORS", _unavail(src, str(exc))
-
-
 def fetch_money_supply() -> Tuple[str, Any]:
     """M1/M2 同比增速（月度）。
     确认列名（2026-04-13）：月份(格式'2026年02月份'), 货币和准货币(M2)-同比增长, 货币(M1)-同比增长
@@ -826,11 +804,6 @@ def calc_all_derived(
         }
     }
 
-    # ── 资金流动 ───────────────────────────────────────────────────────────
-    fund_flow = {
-        "new_investors": _build_new_investors_metric(raw.get("NEW_INVESTORS", {})),
-    }
-
     # ── M1/M2/存款 ────────────────────────────────────────────────────────
     money    = raw.get("MONEY_SUPPLY", {}) if isinstance(raw.get("MONEY_SUPPLY"), dict) else {}
     deposit  = raw.get("RMB_DEPOSIT", {})  if isinstance(raw.get("RMB_DEPOSIT"),  dict) else {}
@@ -895,30 +868,12 @@ def calc_all_derived(
         "market_breadth":  market_breadth,
         "leverage":        leverage,
         "volatility":      volatility,
-        "fund_flow":       fund_flow,
         "fund_reserve":    fund_reserve,
         "derived":         derived,
         "turnover_history": turnover_history,
         "errors":          errors,
     }
 
-
-def _build_new_investors_metric(raw: Dict) -> Dict:
-    if isinstance(raw, dict) and raw.get("value") is not None:
-        return {
-            "value": raw["value"],
-            "unit": "万户",
-            "status": "ok",
-            "source": "akshare:stock_account_statistics_em",
-            "as_of": raw.get("as_of"),
-        }
-    return {
-        "value": None, "unit": "万户",
-        "status": "unavailable",
-        "source": "akshare:stock_account_statistics_em",
-        "as_of": None,
-        "reason": raw.get("reason", "unknown") if isinstance(raw, dict) else "fetch failed",
-    }
 
 # ─── 主流程 ───────────────────────────────────────────────────────────────────
 
@@ -936,7 +891,6 @@ def run() -> Dict[str, Any]:
         fetch_margin_sse,          # 组3：融资
         fetch_margin_szse,
         fetch_qvix,                # 组4：其他
-        fetch_new_investors,
         fetch_money_supply,
         fetch_rmb_deposit,
         fetch_spot_em,             # 含新浪兜底，最后执行（耗时较长）
@@ -988,7 +942,6 @@ def run() -> Dict[str, Any]:
         "market_breadth":  derived_result["market_breadth"],
         "leverage":        derived_result["leverage"],
         "volatility":      derived_result["volatility"],
-        "fund_flow":       derived_result["fund_flow"],
         "fund_reserve":    derived_result["fund_reserve"],
         "derived":         derived_result["derived"],
         # breadth_history 保留在 snapshot 中（条数少，供 Claude 直接读取近期趋势）
@@ -1038,7 +991,6 @@ def main() -> None:
     mb  = snapshot.get("market_breadth", {})
     lev = snapshot.get("leverage", {})
     vol = snapshot.get("volatility", {})
-    ff  = snapshot.get("fund_flow", {})
     fr  = snapshot.get("fund_reserve", {})
     pct = snapshot.get("derived", {}).get("percentile_snapshot", {})
 
